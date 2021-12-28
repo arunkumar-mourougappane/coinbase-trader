@@ -31,7 +31,7 @@ class CoinbaseTrader():
       self.verbose = verbose
       self.logger = self.setupLogger()
 
-   def setupLogger(self):
+   def setupLogger(self) -> colorlog:
       # create auxiliary variables
       loggerName = Path(__file__).stem
       # create logger
@@ -45,7 +45,7 @@ class CoinbaseTrader():
       logger.addHandler(consoleHandler)
       return logger
 
-   def loadConfig(self, config_path):
+   def loadConfig(self, config_path) -> bool:
       try:
          credentials=None
          with open(config_path, 'r') as file:
@@ -61,13 +61,13 @@ class CoinbaseTrader():
          self.logger.fatal("Cannot load config.")
       return False
 
-   def check_if_wallet_is_in_watch_list(self, wallet_name):
+   def check_if_wallet_is_in_watch_list(self, wallet_name) -> bool:
       for watch_list_entity in self.trader_wallet_watch_list:
          if watch_list_entity in wallet_name.lower():
             return True
       return False
 
-   def print_watched_wallets(self):
+   def print_watched_wallets(self) -> str:
       if not self.IsTraderReady:
          self.logger.error("Coinbase Trader client has not been initialized properly.")
          return False
@@ -87,12 +87,12 @@ class CoinbaseTrader():
       print ('\n'.join( message ))
       return
 
-   def log_account_info(self, account):
+   def log_account_info(self, account) -> None:
       self.logger.info("----------------------------------------")
       for account_data in str(account).split("\n"):
          self.logger.info(account_data)
 
-   def setUpConnection(self, config_path):
+   def setUpConnection(self, config_path) -> bool:
       if self.loadConfig(config_path):
          try:
             self.coinbaseClient = Client(self.api_key,self.api_secret)
@@ -106,7 +106,7 @@ class CoinbaseTrader():
          self.logger.fatal("Failed to load config for connection.")
          return False
 
-   def get_wallet_accounts(self):
+   def get_wallet_accounts(self) -> None:
       if not self.IsTraderReady:
          self.logger.error("Coinbase Trader client has not been initialized properly.")
          return
@@ -115,7 +115,7 @@ class CoinbaseTrader():
          self.wallet_accounts[wallet_data["id"]]=AccountInfo(wallet_data)
          self.logger.info("Saved {} data.".format(wallet_data["name"]))
 
-   def list_wallets_by_currency(self,currency):
+   def get_wallet_list_by_currency(self,currency) -> list:
       wallet_by_currency=list()
       for wallet_id in self.wallet_accounts:
          if self.wallet_accounts[wallet_id].currency == currency.upper():
@@ -131,7 +131,7 @@ def main():
    if myTrader.IsTraderReady:
       # myTrader.print_watched_wallets()
       myTrader.get_wallet_accounts()
-      for wallet in myTrader.list_wallets_by_currency("MATIC"):
+      for wallet in myTrader.get_wallet_list_by_currency("MATIC"):
          myTrader.log_account_info(wallet)
 if __name__ == "__main__":
    main()
