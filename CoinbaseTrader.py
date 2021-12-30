@@ -6,9 +6,8 @@ import termcolor
 
 import colorlog
 from pathlib import Path
-
 from AccountInfo import AccountInfo
-
+from UserInfo import UserInfo
 
 def format_to_red(unformatted_string):
    return termcolor.colored(str(unformatted_string), 'red', attrs=['blink'])
@@ -26,7 +25,6 @@ class CoinbaseTrader():
       self.api_key = ""
       self.trader_wallet_watch_list = list()
       self.watched_accounts = dict()
-      self.wallet_accounts=dict()
       self.coinbaseClient = None
       self.verbose = verbose
       self.logger = self.setupLogger()
@@ -38,7 +36,7 @@ class CoinbaseTrader():
       logger = colorlog.getLogger(loggerName)
       # create console handler
       consoleHandler = colorlog.StreamHandler()
-      consoleHandler.setFormatter(colorlog.ColoredFormatter('%(asctime)s %(log_color)s%(levelname)s:%(name)s:%(message)s'))
+      consoleHandler.setFormatter(colorlog.ColoredFormatter('%(asctime)s %(log_color)s%(levelname)s:%(name)s %(funcName)20s():%(lineno)s :%(message)s'))
       if self.verbose:
          logger.setLevel(level=colorlog.INFO)
       # Return set up instance
@@ -67,30 +65,32 @@ class CoinbaseTrader():
             return True
       return False
 
-   def print_watched_wallets(self) -> str:
+   def print_watched_wallets(self) -> None:
       if not self.IsTraderReady:
          self.logger.error("Coinbase Trader client has not been initialized properly.")
          return False
       message = list()
       total = 0
-      accounts = self.coinbaseClient.get_accounts()
-      for wallet in accounts.data:
-         # print(str(wallet))
-         if self.check_if_wallet_is_in_watch_list(wallet['name']):
-            message.append('{:26s}\t |{:25s}'.format(format_to_yellow(wallet['name']),str(wallet['native_balance'])))
-            value = str(wallet['native_balance']).replace('USD','')
+      accounts = self.get_wallet_accounts()
+      if len(accounts) != 0:
+         message.append('{:25s}|{:>25s}|'.format("Wallet","Amount"))
+      else:
+         return 
+      for wallet_id, wallet in accounts.items():
+         if self.check_if_wallet_is_in_watch_list(wallet.wallet_name):
+            message.append('{:26s}\t |{:>25s}|'.format(format_to_yellow(wallet.wallet_name),wallet.native_balance.amount))
+            value = str(wallet.native_balance.amount).replace('USD','')
             total +=  float(value)
-            account=AccountInfo(wallet)
-            self.watched_accounts[account.wallet_id]=account
-            self.log_account_info(account)
-      message.append('{:25s}|{}' .format("Total Balance",format_to_red("USD {:.2f}".format(total))))
+            self.watched_accounts[wallet_id]=wallet
+            self.log_multiline_info(wallet)
+      message.append('{:25s}|{:>25s}|' .format("Total Balance(USD)",format_to_red("{:25.2f}".format(total))))
       print ('\n'.join( message ))
       return
 
-   def log_account_info(self, account) -> None:
+   def log_multiline_info(self, data_string) -> None:
       self.logger.info("----------------------------------------")
-      for account_data in str(account).split("\n"):
-         self.logger.info(account_data)
+      for line in str(data_string).split("\n"):
+         self.logger.info(line)
 
    def setUpConnection(self, config_path) -> bool:
       if self.loadConfig(config_path):
@@ -106,32 +106,42 @@ class CoinbaseTrader():
          self.logger.fatal("Failed to load config for connection.")
          return False
 
-   def get_wallet_accounts(self) -> None:
+   def get_wallet_accounts(self) -> dict():
       if not self.IsTraderReady:
          self.logger.error("Coinbase Trader client has not been initialized properly.")
          return
       accounts = self.coinbaseClient.get_accounts()
+      wallet_accounts=dict()
       for wallet_data in accounts["data"]:
-         self.wallet_accounts[wallet_data["id"]]=AccountInfo(wallet_data)
-         self.logger.info("Saved {} data.".format(wallet_data["name"]))
+         wallet_accounts[wallet_data["id"]]=AccountInfo(wallet_data)
+         self.logger.info("Saved ID: {} Type: {} data.".format(wallet_data["id"],wallet_data["name"]))
+      return wallet_accounts
 
    def get_wallet_list_by_currency(self,currency) -> list:
       wallet_by_currency=list()
-      for wallet_id in self.wallet_accounts:
-         if self.wallet_accounts[wallet_id].currency == currency.upper():
-            wallet_by_currency.append(self.wallet_accounts[wallet_id])
+      wallet_accounts = self.get_wallet_accounts()
+      for wallet_id in wallet_accounts:
+         if wallet_accounts[wallet_id].currency.upper() == currency.upper():
+            wallet_by_currency.append(wallet_accounts[wallet_id])
       return wallet_by_currency
 
-def main():
-   myTrader = CoinbaseTrader(verbose=True)
-   if not myTrader.setUpConnection("credentials.yml"):
-      myTrader.logger.error( "Failed to setup connection.")
-   else:
-      myTrader.logger.info("{}".format( "Coinbase Trader ready for access."))
-   if myTrader.IsTraderReady:
-      # myTrader.print_watched_wallets()
-      myTrader.get_wallet_accounts()
-      for wallet in myTrader.get_wallet_list_by_currency("MATIC"):
-         myTrader.log_account_info(wallet)
-if __name__ == "__main__":
-   main()
+
+   def get_wallet(self,wallet_id) -> list:
+      account_info_json = self.coinbaseClient.get_account(wallet_id)
+      if account_info_json is not None:
+         account_info=AccountInfo(account_info_json)
+         self.log_multiline_info(account_info)
+         return account_info
+      return None
+
+   def get_current_user(self):
+      if not self.IsTraderReady:
+         self.logger.error("Coinbase Trader client has not been initialized properly.")
+         return None
+      user=UserInfo(self.coinbaseClient.get_current_user())
+      self.log_multiline_info(user)
+      return user
+
+   def get_wallet_market_trend(self,wallet_id):
+      walletAccount=self.get_wallet(wallet_id)
+      return walletAccount
