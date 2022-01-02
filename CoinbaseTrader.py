@@ -1,13 +1,15 @@
 #!/usr/bin/python3
 
 from coinbase.wallet.client import Client
+from plotext._utility import plot
 import yaml
 import termcolor
-
+from datetime import datetime
 import colorlog
 from pathlib import Path
 from AccountInfo import AccountInfo
 from UserInfo import UserInfo
+import plotext as plt
 
 def format_to_red(unformatted_string):
    return termcolor.colored(str(unformatted_string), 'red', attrs=['blink'])
@@ -142,6 +144,47 @@ class CoinbaseTrader():
       self.log_multiline_info(user)
       return user
 
+   def get_currency_history(self,wallet_id):
+      wallet = self.get_wallet(wallet_id)
+      if wallet is not None:
+         prices = self.coinbaseClient.get_historic_prices(currency_pair="{}-{}".format(wallet.wallet_balance.currency,wallet.native_balance.currency))
+         return prices
+      else:
+         return None
+
    def get_wallet_market_trend(self,wallet_id):
-      walletAccount=self.get_wallet(wallet_id)
-      return walletAccount
+      price_list_time_trend=dict()
+      price_list=self.get_currency_history(wallet_id)
+      if price_list is None:
+         return None
+      if len(price_list) == 0:
+         return None
+      for price_point_data in price_list["prices"]:
+         time_stamp = datetime.strptime(price_point_data["time"], '%Y-%m-%dT%H:%M:%SZ')
+         # price_list_time_trend[time_stamp]=float(price_point_data["price"])
+         price_list_time_trend[int(time_stamp.strftime('%s'))]=float(price_point_data["price"])
+      return price_list_time_trend
+
+   def plot_pricing_trend(self, wallet_id):
+      price_trend = self.get_wallet_market_trend(wallet_id)
+      account =  self.get_wallet(wallet_id)
+      plt.canvas_color("black")
+      plt.axes_color("black")
+      plt.ticks_color("yellow")
+      plot_date_time=list()
+      xticks=[]
+      xlabels=[]
+      index=1
+      for timestamp_epoch in price_trend.keys():
+         time_stamp=datetime.fromtimestamp(timestamp_epoch)
+         plot_date_time.append(plt.datetime.datetime_to_string(time_stamp))
+         if index%20 == 0:
+            xticks.append(int(time_stamp.strftime('%s')))
+            xlabels.append(plt.datetime.datetime_to_string(time_stamp))
+         index+=1
+      plt.plot(price_trend.keys(), price_trend.values(), color="green", marker="dot")
+      plt.xticks(xticks, xlabels)
+      plt.title("Price Trends for {}".format(account.wallet_balance.currency))
+      plt.xlabel("Time")
+      plt.ylabel("{}".format(account.native_balance.currency))
+      plt.show()
