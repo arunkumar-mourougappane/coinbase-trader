@@ -21,7 +21,8 @@ def main():
       print("*************** User Information ***************")
       print(myTrader.get_current_user())
       print("*************** Account Trend ***************")
-      price_trend=myTrader.plot_pricing_trend("c008f295-6a38-558b-8c8c-168d5b1d9c2d")
+      myTrader.plot_pricing_trend("bb3723a4-ca23-54b4-bd40-f3f2405b3af0", colorless=False,width=120,height=40)
+      myTrader.plot_live_trend("bb3723a4-ca23-54b4-bd40-f3f2405b3af0", colorless=False,width=120,height=40)
 
 if __name__ == "__main__":
    main()

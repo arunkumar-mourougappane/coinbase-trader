@@ -5,6 +5,7 @@ from plotext._utility import plot
 import yaml
 import termcolor
 from datetime import datetime
+import time
 import colorlog
 from pathlib import Path
 from AccountInfo import AccountInfo
@@ -165,12 +166,10 @@ class CoinbaseTrader():
          price_list_time_trend[int(time_stamp.strftime('%s'))]=float(price_point_data["price"])
       return price_list_time_trend
 
-   def plot_pricing_trend(self, wallet_id):
+   def plot_pricing_trend(self, wallet_id, colorless=False, width=80, height=24):
       price_trend = self.get_wallet_market_trend(wallet_id)
       account =  self.get_wallet(wallet_id)
-      plt.canvas_color("black")
-      plt.axes_color("black")
-      plt.ticks_color("yellow")
+
       plot_date_time=list()
       xticks=[]
       xlabels=[]
@@ -184,7 +183,49 @@ class CoinbaseTrader():
          index+=1
       plt.plot(price_trend.keys(), price_trend.values(), color="green", marker="dot")
       plt.xticks(xticks, xlabels)
+      plt.plot_size(width, height)
+      if colorless:
+         plt.colorless()
+      else:
+         plt.canvas_color("black")
+         plt.axes_color("black")
+         plt.ticks_color("yellow")
       plt.title("Price Trends for {}".format(account.wallet_balance.currency))
       plt.xlabel("Time")
       plt.ylabel("{}".format(account.native_balance.currency))
       plt.show()
+
+   def plot_live_trend(self,  wallet_id, colorless=False, width=80, height=24):
+      try:
+         account =  self.get_wallet(wallet_id)
+         while True:
+            plt.clt()
+            plt.cld()
+            price_trend = self.get_wallet_market_trend(wallet_id)
+            plot_date_time=list()
+            xticks=[]
+            xlabels=[]
+            index=1
+            for timestamp_epoch in price_trend.keys():
+               time_stamp=datetime.fromtimestamp(timestamp_epoch)
+               plot_date_time.append(plt.datetime.datetime_to_string(time_stamp))
+               if index%20 == 0:
+                  xticks.append(int(time_stamp.strftime('%s')))
+                  xlabels.append(plt.datetime.datetime_to_string(time_stamp))
+               index+=1
+            plt.plot(price_trend.keys(), price_trend.values(), color="green", marker="dot")
+            plt.xticks(xticks, xlabels)
+            plt.plot_size(width, height)
+            if colorless:
+               plt.colorless()
+            else:
+               plt.canvas_color("black")
+               plt.axes_color("black")
+               plt.ticks_color("yellow")
+            plt.title("Price Trends for {}".format(account.wallet_balance.currency))
+            plt.xlabel("Time")
+            plt.ylabel("{}".format(account.native_balance.currency))
+            plt.show()
+            time.sleep(.5)
+      except KeyboardInterrupt as exception:
+         self.logger.info("Breaking out of loop and exiting.")
