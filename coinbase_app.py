@@ -13,15 +13,19 @@ def main():
    else:
       myTrader.logger.info("{}".format( "Coinbase Trader ready for access."))
    if myTrader.IsTraderReady:
-      print("*************** Watched Accounts ***************")
-      myTrader.print_watched_wallets()
       print("*************** Wallet Account By Currency ***************")
-      for wallet in myTrader.get_wallet_list_by_currency("BTC"):
+      for wallet in myTrader.get_wallet_list_by_currency("DOGE"):
          print(wallet)
       print("*************** User Information ***************")
       print(myTrader.get_current_user())
-      print("*************** Account Trend ***************")
-      price_trend=myTrader.plot_pricing_trend("c008f295-6a38-558b-8c8c-168d5b1d9c2d")
+      print("*************** Watched Accounts ***************")
+      myTrader.print_watched_wallets()
+      our_accounts=myTrader.get_watched_wallet_accounts()
+      print("*************** Watched Accounts Data ***************")
+      for account_id in our_accounts:
+         print(our_accounts[account_id])
+      new_list=list(our_accounts.keys())
+      myTrader.plot_live_trends_for_list(new_list)
 
 if __name__ == "__main__":
    main()
