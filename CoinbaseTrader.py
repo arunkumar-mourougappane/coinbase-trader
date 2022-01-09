@@ -2,8 +2,6 @@
 
 from typing import List
 from coinbase.wallet.client import Client
-from plotext._utility import plot
-from plotext._utility.color import colors
 import yaml
 import termcolor
 from datetime import datetime
@@ -15,6 +13,7 @@ from UserInfo import UserInfo
 import plotext as plt
 import random
 import math
+import sys
 
 
 def is_square(num):
@@ -271,7 +270,7 @@ class CoinbaseTrader():
             self.logger.error("Cannot find wallet for ID: {}".format(wallet_id))
       return wallet_accounts
    
-   def plot_live_trends_for_list(self,  wallet_ids, colorless=False, clearPlots=False):
+   def plot_pricing_trend_for_list(self,  wallet_ids, colorless=False, clearPlots=False):
       if wallet_ids is None:
          self.logger.error("Empty Wallet Id List.")
          return None
@@ -354,3 +353,12 @@ class CoinbaseTrader():
             col_index = 1
       self.logger.info("Drawing Plot data for accounts")
       plt.show()
+
+   def plot_live_trends_for_list(self,  wallet_ids, colorless=False, clearPlots=True):
+      try:
+         while True:
+            self.plot_pricing_trend_for_list(wallet_ids, colorless , clearPlots)
+            time.sleep(1)
+      except KeyboardInterrupt:
+         self.logger.info("Breaking out of loop.")
+         sys.exit(0)
