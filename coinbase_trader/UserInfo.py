@@ -1,6 +1,5 @@
 #! /usr/bin/python3
 
-from AccountInfo import AccountInfo
 from Country import Country
 from datetime import datetime
 
@@ -10,8 +9,9 @@ class Nationality:
       self.nationality_code = nationality_code
       self.nationality_name = nationality_name
 
+
 class UserInfo():
-   def __init__(self,user_json):
+   def __init__(self, user_json):
       self.avatar_url = user_json["avatar_url"]
       self.name = user_json["name"]
       self.country = Country(user_json["country"]["code"], user_json["country"]["name"], user_json["country"]["is_in_europe"])
@@ -23,13 +23,14 @@ class UserInfo():
       self.user_id = user_json["id"]
       self.legacy_user_id = user_json["legacy_id"]
       self.native_currency = user_json["native_currency"]
-      self.nationality=Nationality(user_json["nationality"]["code"],user_json["nationality"]["name"])
-      self.state=user_json["state"]
+      self.nationality = Nationality(user_json["nationality"]["code"], user_json["nationality"]["name"])
+      self.state = user_json["state"]
       self.time_zone = user_json["time_zone"]
       self.username = user_json["username"]
       self.created_at = datetime.strptime(user_json["created_at"], '%Y-%m-%dT%H:%M:%SZ')
+
    def __repr__(self):
-      user_data=list()
+      user_data = list()
       user_data.append("Name: {}".format(self.name))
       user_data.append("Username: {}".format(self.username))
       user_data.append("Id: {}".format(self.user_id))

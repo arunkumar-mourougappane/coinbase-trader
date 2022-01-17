@@ -2,22 +2,25 @@
 
 class Balance():
    def __init__(self, amount, currency) -> None:
-      self.amount=amount
-      self.currency=currency
-   def __repr__(self)  -> str:
+      self.amount = amount
+      self.currency = currency
+
+   def __repr__(self) -> str:
       return "Amount: {} {}".format(self.amount, self.currency)
+
 
 class AccountInfo():
    def __init__(self, wallet_data) -> None:
-      self.wallet_id=wallet_data["id"]
-      self.currency=wallet_data["currency"]
-      self.wallet_name=wallet_data["name"]
-      self.wallet_balance=Balance(wallet_data["balance"]["amount"],wallet_data["balance"]["currency"])
-      self.native_balance=Balance(wallet_data["native_balance"]["amount"],wallet_data["native_balance"]["currency"])
-      self.allow_deposits=wallet_data["allow_deposits"]
-      self.allow_withdrawls=wallet_data["allow_withdrawals"]
+      self.wallet_id = wallet_data["id"]
+      self.currency = wallet_data["currency"]
+      self.wallet_name = wallet_data["name"]
+      self.wallet_balance = Balance(wallet_data["balance"]["amount"], wallet_data["balance"]["currency"])
+      self.native_balance = Balance(wallet_data["native_balance"]["amount"], wallet_data["native_balance"]["currency"])
+      self.allow_deposits = wallet_data["allow_deposits"]
+      self.allow_withdrawls = wallet_data["allow_withdrawals"]
+
    def __repr__(self) -> str:
-      wallet_data=list()
+      wallet_data = list()
       wallet_data.append("Wallet Name: {}".format(self.wallet_name))
       wallet_data.append("Wallet ID: {}".format(self.wallet_id))
       wallet_data.append("Wallet Currency: {}".format(self.currency))
@@ -27,4 +30,4 @@ class AccountInfo():
       wallet_data.append("\t{}".format(self.native_balance))
       wallet_data.append("Allow Withdrawls: {}".format("Yes" if self.allow_withdrawls else "No"))
       wallet_data.append("Allow Deposits: {}".format("Yes" if self.allow_deposits else "No"))
-      return '\n'.join( wallet_data )
+      return '\n'.join(wallet_data)

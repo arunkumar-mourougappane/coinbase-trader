@@ -20,17 +20,21 @@ def is_square(num):
     sqrt = math.sqrt(num)
     return (sqrt - int(sqrt)) == 0
 
+
 def format_to_red(unformatted_string):
    return termcolor.colored(str(unformatted_string), 'red', attrs=['blink'])
+
 
 def format_to_green(unformatted_string):
    return termcolor.colored(unformatted_string, 'green', attrs=['blink'])
 
+
 def format_to_yellow(unformatted_string):
    return termcolor.colored(unformatted_string, 'yellow')
 
+
 class CoinbaseTrader():
-   def __init__(self, verbose = False) -> None:
+   def __init__(self, verbose=False) -> None:
       self.IsTraderReady = False
       self.api_secret = ""
       self.api_key = ""
@@ -56,18 +60,18 @@ class CoinbaseTrader():
 
    def loadConfig(self, config_path) -> bool:
       try:
-         credentials=None
+         credentials = None
          with open(config_path, 'r') as file:
             credentials = yaml.safe_load(file)
-            self.api_key=credentials["api-key"]
-            self.api_secret=credentials["api-secret"]
+            self.api_key = credentials["api-key"]
+            self.api_secret = credentials["api-secret"]
             self.trader_wallet_watch_list = credentials["wallet-watch-list"]
             self.logger.info("Loaded Config successfully.")
             return True
       except IOError as ioError:
-         self.logger.fatal("Cannot Load config due to IO Error.")
+         self.logger.fatal("Cannot Load config due to IO Error: {}".format(ioError.__class__.__name__))
       except Exception as exception:
-         self.logger.fatal("Cannot load config.")
+         self.logger.fatal("Cannot load config: {}".format(exception.__class__.__name__))
       return False
 
    def check_if_wallet_is_in_watch_list(self, wallet_name) -> bool:
@@ -84,18 +88,18 @@ class CoinbaseTrader():
       total = 0
       accounts = self.get_wallet_accounts()
       if len(accounts) != 0:
-         message.append('{:25s}|{:>25s}|'.format("Wallet","Amount"))
+         message.append('{:25s}|{:>25s}|'.format("Wallet", "Amount"))
       else:
          return None
       for wallet_id, wallet in accounts.items():
          if self.check_if_wallet_is_in_watch_list(wallet.wallet_name):
-            message.append('{:26s}\t |{:>25s}|'.format(format_to_yellow(wallet.wallet_name),wallet.native_balance.amount))
-            value = str(wallet.native_balance.amount).replace('USD','')
-            total +=  float(value)
-            self.watched_accounts[wallet_id]=wallet
+            message.append('{:26s}\t |{:>25s}|'.format(format_to_yellow(wallet.wallet_name), wallet.native_balance.amount))
+            value = str(wallet.native_balance.amount).replace('USD', '')
+            total += float(value)
+            self.watched_accounts[wallet_id] = wallet
             self.log_multiline_info(wallet)
-      message.append('{:25s}|{:>25s}|' .format("Total Balance(USD)",format_to_red("{:25.2f}".format(total))))
-      print ('\n'.join( message ))
+      message.append('{:25s}|{:>25s}|' .format("Total Balance(USD)", format_to_red("{:25.2f}".format(total))))
+      print('\n'.join(message))
       return None
 
    def get_watched_wallet_accounts(self) -> dict():
@@ -108,7 +112,7 @@ class CoinbaseTrader():
          if self.check_if_wallet_is_in_watch_list(wallet.wallet_name):
             wallet_accounts[wallet_id] = wallet
       return wallet_accounts
-   
+
    def log_multiline_info(self, data_string) -> None:
       self.logger.info("----------------------------------------")
       for line in str(data_string).split("\n"):
@@ -117,12 +121,12 @@ class CoinbaseTrader():
    def setUpConnection(self, config_path) -> bool:
       if self.loadConfig(config_path):
          try:
-            self.coinbaseClient = Client(self.api_key,self.api_secret)
+            self.coinbaseClient = Client(self.api_key, self.api_secret)
             self.IsTraderReady = True
             self.logger.info("Client connected successfully.")
-            return True;
+            return True
          except Exception as exception:
-            self.logger.fatal("Cannot setup Connection to Coinbase servers.")
+            self.logger.fatal("Cannot setup Connection to Coinbase servers: {}".format(exception.__class__.__name__))
             return False
       else:
          self.logger.fatal("Failed to load config for connection.")
@@ -133,25 +137,24 @@ class CoinbaseTrader():
          self.logger.error("Coinbase Trader client has not been initialized properly.")
          return
       accounts = self.coinbaseClient.get_accounts()
-      wallet_accounts=dict()
+      wallet_accounts = dict()
       for wallet_data in accounts["data"]:
-         wallet_accounts[wallet_data["id"]]=AccountInfo(wallet_data)
-         self.logger.info("Saved ID: {} Type: {} data.".format(wallet_data["id"],wallet_data["name"]))
+         wallet_accounts[wallet_data["id"]] = AccountInfo(wallet_data)
+         self.logger.info("Saved ID: {} Type: {} data.".format(wallet_data["id"], wallet_data["name"]))
       return wallet_accounts
 
-   def get_wallet_list_by_currency(self,currency) -> list:
-      wallet_by_currency=list()
+   def get_wallet_list_by_currency(self, currency) -> list:
+      wallet_by_currency = list()
       wallet_accounts = self.get_wallet_accounts()
       for wallet_id in wallet_accounts:
          if wallet_accounts[wallet_id].currency.upper() == currency.upper():
             wallet_by_currency.append(wallet_accounts[wallet_id])
       return wallet_by_currency
 
-
-   def get_wallet(self,wallet_id) -> list:
+   def get_wallet(self, wallet_id) -> list:
       account_info_json = self.coinbaseClient.get_account(wallet_id)
       if account_info_json is not None:
-         account_info=AccountInfo(account_info_json)
+         account_info = AccountInfo(account_info_json)
          self.log_multiline_info(account_info)
          return account_info
       return None
@@ -160,21 +163,21 @@ class CoinbaseTrader():
       if not self.IsTraderReady:
          self.logger.error("Coinbase Trader client has not been initialized properly.")
          return None
-      user=UserInfo(self.coinbaseClient.get_current_user())
+      user = UserInfo(self.coinbaseClient.get_current_user())
       self.log_multiline_info(user)
       return user
 
-   def get_currency_history(self,wallet_id):
+   def get_currency_history(self, wallet_id):
       wallet = self.get_wallet(wallet_id)
       if wallet is not None:
-         prices = self.coinbaseClient.get_historic_prices(currency_pair="{}-{}".format(wallet.wallet_balance.currency,wallet.native_balance.currency))
+         prices = self.coinbaseClient.get_historic_prices(currency_pair="{}-{}".format(wallet.wallet_balance.currency, wallet.native_balance.currency))
          return prices
       else:
          return None
 
-   def get_wallet_market_trend(self,wallet_id):
-      price_list_time_trend=dict()
-      price_list=self.get_currency_history(wallet_id)
+   def get_wallet_market_trend(self, wallet_id):
+      price_list_time_trend = dict()
+      price_list = self.get_currency_history(wallet_id)
       if price_list is None:
          return None
       if len(price_list) == 0:
@@ -182,24 +185,24 @@ class CoinbaseTrader():
       for price_point_data in price_list["prices"]:
          time_stamp = datetime.strptime(price_point_data["time"], '%Y-%m-%dT%H:%M:%SZ')
          # price_list_time_trend[time_stamp]=float(price_point_data["price"])
-         price_list_time_trend[int(time_stamp.strftime('%s'))]=float(price_point_data["price"])
+         price_list_time_trend[int(time_stamp.strftime('%s'))] = float(price_point_data["price"])
       return price_list_time_trend
 
    def plot_pricing_trend(self, wallet_id, colorless=False, width=80, height=24):
       price_trend = self.get_wallet_market_trend(wallet_id)
-      account =  self.get_wallet(wallet_id)
+      account = self.get_wallet(wallet_id)
 
-      plot_date_time=list()
-      xticks=[]
-      xlabels=[]
-      index=1
+      plot_date_time = list()
+      xticks = []
+      xlabels = []
+      index = 1
       for timestamp_epoch in price_trend.keys():
-         time_stamp=datetime.fromtimestamp(timestamp_epoch)
+         time_stamp = datetime.fromtimestamp(timestamp_epoch)
          plot_date_time.append(plt.datetime.datetime_to_string(time_stamp))
-         if index%20 == 0:
+         if index % 20 == 0:
             xticks.append(int(time_stamp.strftime('%s')))
             xlabels.append(plt.datetime.datetime_to_string(time_stamp))
-         index+=1
+         index += 1
       plt.plot(price_trend.keys(), price_trend.values(), color="green", marker="dot")
       plt.xticks(xticks, xlabels)
       plt.plot_size(width, height)
@@ -214,24 +217,24 @@ class CoinbaseTrader():
       plt.ylabel("{}".format(account.native_balance.currency))
       plt.show()
 
-   def plot_live_trend(self,  wallet_id, colorless=False, width=80, height=24):
+   def plot_live_trend(self, wallet_id, colorless=False, width=80, height=24):
       try:
-         account =  self.get_wallet(wallet_id)
+         account = self.get_wallet(wallet_id)
          while True:
             plt.clt()
             plt.cld()
             price_trend = self.get_wallet_market_trend(wallet_id)
-            plot_date_time=list()
-            xticks=[]
-            xlabels=[]
-            index=1
+            plot_date_time = list()
+            xticks = []
+            xlabels = []
+            index = 1
             for timestamp_epoch in price_trend.keys():
-               time_stamp=datetime.fromtimestamp(timestamp_epoch)
+               time_stamp = datetime.fromtimestamp(timestamp_epoch)
                plot_date_time.append(plt.datetime.datetime_to_string(time_stamp))
-               if index%20 == 0:
+               if index % 20 == 0:
                   xticks.append(int(time_stamp.strftime('%s')))
                   xlabels.append(plt.datetime.datetime_to_string(time_stamp))
-               index+=1
+               index += 1
             plt.plot(price_trend.keys(), price_trend.values(), color="green", marker="dot")
             plt.xticks(xticks, xlabels)
             plt.plot_size(width, height)
@@ -247,8 +250,8 @@ class CoinbaseTrader():
             plt.show()
             time.sleep(.5)
       except KeyboardInterrupt as exception:
-         self.logger.info("Breaking out of loop and exiting.")
-   
+         self.logger.info("Breaking out of loop and exiting with exception {}".format(exception.__class__.__name__))
+
    def get_wallet_accounts_from_list(self, wallet_ids):
       if wallet_ids is None:
          self.logger.error("Empty Wallet Id List.")
@@ -269,15 +272,15 @@ class CoinbaseTrader():
          else:
             self.logger.error("Cannot find wallet for ID: {}".format(wallet_id))
       return wallet_accounts
-   
-   def plot_pricing_trend_for_list(self,  wallet_ids, colorless=False, clearPlots=False):
+
+   def plot_pricing_trend_for_list(self, wallet_ids, colorless=False, clearPlots=False):
       if wallet_ids is None:
          self.logger.error("Empty Wallet Id List.")
          return None
       if not isinstance(wallet_ids, List):
          self.logger.error("Arguments is not a list.")
          return None
-      wallet_accounts =  self.get_wallet_accounts_from_list(wallet_ids)
+      wallet_accounts = self.get_wallet_accounts_from_list(wallet_ids)
       if len(wallet_accounts) == 0:
          self.logger.error("No accounts were retrieved.")
          return None
@@ -293,47 +296,47 @@ class CoinbaseTrader():
             row_count = int(math.sqrt(plot_count))
             col_count = row_count
          else:
-            if plot_count%3 == 0:
-               row_count = int(plot_count/3)
+            if plot_count % 3 == 0:
+               row_count = int(plot_count / 3)
                col_count = 3
             else:
-               row_count = int(plot_count/3) + 1
+               row_count = int(plot_count / 3) + 1
                col_count = 3
       if clearPlots:
          plt.cld()
          plt.clc()
          plt.clt()
 
-      plt.subplots( row_count, col_count)
+      plt.subplots(row_count, col_count)
       row_index = 1
       col_index = 1
       for wallet_id in wallet_accounts.keys():
          plt.subplot(row_index, col_index)
-         account =  wallet_accounts[wallet_id]
-         self.logger.info("Plotting Subplot ({},{}) - Account: {}".format(row_index, col_index,account.wallet_name))
+         account = wallet_accounts[wallet_id]
+         self.logger.info("Plotting Subplot ({},{}) - Account: {}".format(row_index, col_index, account.wallet_name))
          price_trend = self.get_wallet_market_trend(wallet_id)
-         plot_date_time=list()
-         xticks=[]
-         xlabels=[]
-         yticks=[]
-         ylabels=[]
-         index=1
+         plot_date_time = list()
+         xticks = []
+         xlabels = []
+         yticks = []
+         ylabels = []
+         index = 1
          for timestamp_epoch in price_trend.keys():
-            time_stamp=datetime.fromtimestamp(timestamp_epoch)
+            time_stamp = datetime.fromtimestamp(timestamp_epoch)
             plot_date_time.append(plt.datetime.datetime_to_string(time_stamp))
-            if index%20 == 0:
+            if index % 20 == 0:
                xticks.append(int(time_stamp.strftime('%s')))
                xlabels.append(plt.datetime.datetime_to_string(time_stamp))
-            if index%3 == 0:
+            if index % 3 == 0:
                yticks.append(price_trend[timestamp_epoch])
                ylabels.append(price_trend[timestamp_epoch])
-            index+=1
-         random.seed(int(time.time_ns())/1000000)
-         R = random.randrange(0, 256, 67) # last value optional (step) 
-         B = random.randrange(0, 256, 100) + random.randint(1,3)
-         G = random.randrange(0, 256, 31) + random.randint(1,3)
-         self.logger.info("Generated RGB Color data: ({},{},{})".format(R,G,B))
-         plt.plot(price_trend.keys(), price_trend.values(), color=(R,G,B), marker='dot')
+            index += 1
+         random.seed(int(time.time_ns()) / 1000000)
+         R = random.randrange(0, 256, 67)  # last value optional (step)
+         B = random.randrange(0, 256, 100) + random.randint(1, 3)
+         G = random.randrange(0, 256, 31) + random.randint(1, 3)
+         self.logger.info("Generated RGB Color data: ({},{},{})".format(R, G, B))
+         plt.plot(price_trend.keys(), price_trend.values(), color=(R, G, B), marker='dot')
          plt.xticks(xticks, xlabels)
          plt.yticks(yticks, ylabels)
          if colorless:
@@ -354,10 +357,10 @@ class CoinbaseTrader():
       self.logger.info("Drawing Plot data for accounts")
       plt.show()
 
-   def plot_live_trends_for_list(self,  wallet_ids, colorless=False, clearPlots=True):
+   def plot_live_trends_for_list(self, wallet_ids, colorless=False, clearPlots=True):
       try:
          while True:
-            self.plot_pricing_trend_for_list(wallet_ids, colorless , clearPlots)
+            self.plot_pricing_trend_for_list(wallet_ids, colorless, clearPlots)
             time.sleep(1)
       except KeyboardInterrupt:
          self.logger.info("Breaking out of loop.")
